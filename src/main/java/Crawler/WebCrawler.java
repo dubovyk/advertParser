@@ -50,8 +50,28 @@ public class WebCrawler {
     }
 
     private String getDescription(Document document){
+        StringBuilder result = new StringBuilder();
+        result.append("CLICK FOR GUIDE AND LINKS ►► ");
+        result.append(document.baseUri());
+        result.append("\n\n");
+
         org.jsoup.nodes.Element desc = document.select("meta[name=description]").get(0);
-        return desc.attr("content");
+        result.append(desc.attr("content"));
+        result.append("\n\n");
+        result.append("Products included in this guide:\n");
+        int i = 1;
+        for(SingleSlide slide: getSlides(document)){
+            result.append(i).append(". ").append(slide.getName()).append("\n");
+            i++;
+        }
+        result.append("\n");
+        result.append("Please note: Our picks for this guide might " +
+                "have changed since we uploaded this review video. " +
+                "Please check the official guide above to view the " +
+                "latest picks and the best products.\n");
+        result.append("\n");
+        result.append("Latest picks: ").append(document.baseUri());
+        return result.toString();
     }
 
 
