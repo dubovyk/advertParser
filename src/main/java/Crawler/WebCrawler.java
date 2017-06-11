@@ -8,6 +8,7 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
 import java.io.IOException;
+import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -23,7 +24,10 @@ public class WebCrawler {
     public PageData parseURL(String url){
         Document doc;
         try {
-            doc = Jsoup.connect(url).get();
+            doc = Jsoup.connect(url)
+                    //.userAgent("Mozilla/5.0 (Windows; U; WindowsNT 5.1; en-US; rv1.8.1.6) Gecko/20070725 Firefox/2.0.0.6")
+                    //.referrer("http://www.google.com")
+                    .get();
         } catch (IOException ex){
             ex.printStackTrace();
             return null;
@@ -46,7 +50,9 @@ public class WebCrawler {
 
     private String getTitle(Document doc) throws IOException{
         org.jsoup.nodes.Element title = doc.getElementsByTag("title").get(0);
-        return title.text();
+        String resultString = Normalizer.normalize(title.text(), Normalizer.Form.NFD);
+        resultString = resultString.replaceAll("[^\\x00-\\x7F]", "");
+        return resultString;
     }
 
     private String getDescription(Document document){
@@ -55,9 +61,12 @@ public class WebCrawler {
         result.append(document.baseUri());
         result.append("\n\n");
 
-        org.jsoup.nodes.Element desc = document.select("meta[name=description]").get(0);
-        result.append(desc.attr("content"));
-        result.append("\n\n");
+        //org.jsoup.nodes.Element desc = document.select("meta[name=description]").get(0);
+        //String descr = Normalizer.normalize(result.toString(), Normalizer.Form.NFD);
+        //descr = descr.replaceAll("[^\\x00-\\x7F]", "");
+
+        //result.append(descr);
+        //result.append("\n\n");
         result.append("Products included in this guide:\n");
         int i = 1;
         for(SingleSlide slide: getSlides(document)){
@@ -71,6 +80,7 @@ public class WebCrawler {
                 "latest picks and the best products.\n");
         result.append("\n");
         result.append("Latest picks: ").append(document.baseUri());
+
         return result.toString();
     }
 
@@ -79,7 +89,9 @@ public class WebCrawler {
         List<String> result = new ArrayList<String>();
         Elements tags = document.select("meta[property=article:tag]");
         for(org.jsoup.nodes.Element element: tags){
-            result.add(element.attr("content"));
+            String resultString = Normalizer.normalize(element.attr("content"), Normalizer.Form.NFD);
+            resultString = resultString.replaceAll("[^\\x00-\\x7F]", "");
+            result.add(resultString);
         }
         return result;
     }
@@ -99,15 +111,22 @@ public class WebCrawler {
             Element link = slide.select("span[class=tve_image_frame]").select("noscript").select("img").get(0);
 
             for(org.jsoup.nodes.Element pro: prosItems){
-                pros.add(pro.text());
+                String pro_text = Normalizer.normalize(pro.text(), Normalizer.Form.NFD);
+                pro_text = pro_text.replaceAll("[^\\x00-\\x7F]", "");
+                pros.add(pro_text);
             }
 
             for(org.jsoup.nodes.Element con: consItems){
-                cons.add(con.text());
+                String con_text = Normalizer.normalize(con.text(), Normalizer.Form.NFD);
+                con_text = con_text.replaceAll("[^\\x00-\\x7F]", "");
+                cons.add(con_text);
             }
             String name = productName.text();
 
             SingleSlide newSlide = new SingleSlide();
+
+            name = Normalizer.normalize(name, Normalizer.Form.NFD);
+            name = name.replaceAll("[^\\x00-\\x7F]", "");
 
             newSlide.setId(((Integer) i).toString());
             newSlide.setName(name);

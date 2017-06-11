@@ -10,12 +10,10 @@ import javafx.scene.control.*;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.prefs.Preferences;
 
 /**
  * @author Sergey Dubovyk
@@ -29,6 +27,8 @@ public class MainController{
     public Label prodCounter;
     public TextField filePath;
     public Button selectPath;
+
+    private Preferences prefs;
 
     @FXML
     public void handleLoad(ActionEvent event){
@@ -45,6 +45,7 @@ public class MainController{
 
     @FXML
     public void handleSave(ActionEvent event){
+        prefs = Preferences.userRoot().node(this.getClass().getName());
         if(GlobalModel.getInstance().getPageData() == null){
             Alert error = new Alert(Alert.AlertType.ERROR);
             error.setContentText("Load URL first");
@@ -68,31 +69,40 @@ public class MainController{
         String title = titleField.getText();
         data.setTitle(title);
 
+
+
         try {
-            BufferedWriter writer = new BufferedWriter(new FileWriter(GlobalModel.getInstance().getFilePath()));
+            Writer writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(GlobalModel.getInstance().getFilePath()), "UTF-8"));
             writer.write(GlobalModel.getInstance().getPageData().toXml());
             writer.flush();
-            writer.close();
             Alert alert = new Alert(Alert.AlertType.INFORMATION);
             alert.setContentText("File was saved successfully.");
             alert.setHeaderText("Done");
             alert.showAndWait();
+            prefs.put("initDir", GlobalModel.getInstance().getFilePath());
         } catch (IOException ex){
             ex.printStackTrace();
             Alert error = new Alert(Alert.AlertType.ERROR);
             error.setContentText("Can`t save file");
             error.showAndWait();
+        } finally {
+
         }
     }
 
     @FXML
     public void handleChosePath(ActionEvent event){
+        prefs = Preferences.userRoot().node(this.getClass().getName());
         FileChooser chooser = new FileChooser();
-        chooser.setInitialDirectory(new File(System.getProperty("user.dir")));
+        File initDir = new File(new File(prefs.get("initDir", System.getProperty("user.dir"))).getParent());
+        chooser.setInitialDirectory(initDir);
         chooser.setInitialFileName(GlobalModel.getInstance().getPageData().getTitle().replaceAll("(\\W)", "_") + ".xml");
+
         File path = chooser.showSaveDialog(new Stage());
-        filePath.setText(path.getAbsolutePath());
-        GlobalModel.getInstance().setFilePath(path.getAbsolutePath());
+        if(path!=null){
+            filePath.setText(path.getAbsolutePath());
+            GlobalModel.getInstance().setFilePath(path.getAbsolutePath());
+        }
     }
 
     @FXML
